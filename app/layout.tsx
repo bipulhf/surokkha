@@ -12,7 +12,17 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: { default: "সুরক্ষা - SUST", template: "%s | সুরক্ষা - SUST" },
-  description: "বিশ্ববিদ্যালয়ের র‍্যাগিং ও নিরাপত্তা সংক্রান্ত ঘটনায় ত্বরিৎ ব্যবস্থা। আপনার নিরাপত্তা, আমাদের অগ্রাধিকার।",
+  description:
+    "বিশ্ববিদ্যালয়ের র্যাগিং ও নিরাপত্তা সংক্রান্ত ঘটনায় ত্বরিৎ ব্যবস্থা। আপনার নিরাপত্তা, আমাদের অগ্রাধিকার।",
+  appleWebApp: {
+    capable: true,
+    title: "সুরক্ষা - SUST",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport = {
+  themeColor: "#ff3131",
 };
 
 export default function RootLayout({
