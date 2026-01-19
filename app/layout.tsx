@@ -11,8 +11,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "সুরক্ষা",
-  description: "University incident reporting system",
+  title: { default: "সুরক্ষা - SUST", template: "%s | সুরক্ষা - SUST" },
+  description: "বিশ্ববিদ্যালয়ের র‍্যাগিং ও নিরাপত্তা সংক্রান্ত ঘটনায় ত্বরিৎ ব্যবস্থা। আপনার নিরাপত্তা, আমাদের অগ্রাধিকার।",
 };
 
 export default function RootLayout({

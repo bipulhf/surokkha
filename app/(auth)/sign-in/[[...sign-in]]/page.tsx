@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { SignInForm } from "@/components/auth/sign-in-form";
+
+export const metadata: Metadata = {
+  title: "সাইন ইন",
+  description: "সুরক্ষাতে অ্যাকাউন্টে সাইন ইন করুন।",
+};
 
 type PageProps = { params: Promise<{ "sign-in"?: string[] }> };
 

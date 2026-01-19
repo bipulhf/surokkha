@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { ReportForm } from "@/components/reports/report-form";
 import {
   Card,
@@ -7,6 +8,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "রিপোর্ট করুন",
+  description: "র্যাগিং বা নিরাপত্তা সংক্রান্ত ঘটনা রিপোর্ট করুন।",
+};
 
 export default function StudentReportPage() {
   return (

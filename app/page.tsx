@@ -70,6 +70,9 @@ export default function LandingPage() {
             <h1 className="font-july text-5xl md:text-7xl font-bold tracking-tight text-foreground drop-shadow-sm">
               <span className="text-brand-500">সুরক্ষা</span>
             </h1>
+            <p className="text-base md:text-lg text-muted-foreground font-medium">
+              শাহজালাল বিজ্ঞান ও প্রযুক্তি বিশ্ববিদ্যালয় (SUST)
+            </p>
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed font-medium">
               বিশ্ববিদ্যালয়ের র‍্যাগিং ও নিরাপত্তা সংক্রান্ত ঘটনায়{" "}
               <span className="text-brand-500 font-bold">ত্বরিৎ ব্যবস্থা</span>।{" "}
