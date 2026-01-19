@@ -36,12 +36,20 @@ export default function LandingPage() {
         </div>
         <div className="flex gap-4">
           {isSignedIn ? (
-            <Link
-              href="/student"
-              className="text-sm font-medium hover:text-brand-500 transition-colors"
-            >
-              ড্যাশবোর্ড
-            </Link>
+            <>
+              <Link
+                href="/student"
+                className="text-sm font-medium hover:text-brand-500 transition-colors"
+              >
+                ড্যাশবোর্ড
+              </Link>
+              <Link
+                href="/student/report"
+                className="text-sm font-medium hover:text-brand-500 transition-colors"
+              >
+                নতুন রিপোর্ট
+              </Link>
+            </>
           ) : (
             <Link
               href="/sign-in"
@@ -84,13 +92,23 @@ export default function LandingPage() {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mt-4">
             {isSignedIn ? (
-              <Button
-                asChild
-                size="lg"
-                className="bg-brand-500 hover:bg-brand-400 text-white border-0 shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all rounded-full px-8 text-base font-july"
-              >
-                <Link href="/student">ড্যাশবোর্ডে যান</Link>
-              </Button>
+              <>
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-brand-500 hover:bg-brand-400 text-white border-0 shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all rounded-full px-8 text-base font-july"
+                >
+                  <Link href="/student">ড্যাশবোর্ডে যান</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="border-2 hover:bg-muted/50 rounded-full px-8 text-base backdrop-blur-sm bg-background/50"
+                >
+                  <Link href="/student/report">নতুন রিপোর্ট</Link>
+                </Button>
+              </>
             ) : (
               <>
                 <Button
