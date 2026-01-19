@@ -72,7 +72,7 @@ export default function LandingPage() {
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed font-medium">
               বিশ্ববিদ্যালয়ের র‍্যাগিং ও নিরাপত্তা সংক্রান্ত ঘটনায়{" "}
-              <span className="text-brand-500 font-bold">ত্বরিৎ ব্যবস্থা</span>।
+              <span className="text-brand-500 font-bold">ত্বরিৎ ব্যবস্থা</span>।{" "}
               <br className="hidden md:block" />
               আপনার নিরাপত্তা, আমাদের অগ্রাধিকার।
             </p>
