@@ -41,6 +41,181 @@ import {
 import { cn } from "@/lib/utils";
 
 const ACCEPT_IMAGES = "image/jpeg,image/png,image/webp";
+const MAX_FILE_BYTES = 4 * 1024 * 1024; // 4 MB (safe limit for Next.js API routes)
+const MAX_PIXELS = 5_000_000; // 5 MP
+
+function fmt(n: number) {
+  return (n / 1024 / 1024).toFixed(2) + " MB";
+}
+
+async function compressImage(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    console.log("[compress] 1. INPUT", {
+      name: file.name,
+      size: fmt(file.size),
+      sizeBytes: file.size,
+      target: fmt(MAX_FILE_BYTES),
+    });
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const origW = img.naturalWidth;
+      const origH = img.naturalHeight;
+      const origPx = origW * origH;
+
+      console.log("[compress] 2. IMAGE LOADED", {
+        width: origW,
+        height: origH,
+        pixels: origPx,
+        megapixels: (origPx / 1_000_000).toFixed(2),
+      });
+
+      // Short-circuit: already under 5MP and 4MB - no compression needed
+      if (origPx <= MAX_PIXELS && file.size <= MAX_FILE_BYTES) {
+        console.log("[compress] 2b. SHORT-CIRCUIT: already under limits, returning as-is");
+        resolve(file);
+        return;
+      }
+
+      // Helper to draw image at specific dimensions
+      const drawAtSize = (w: number, h: number): HTMLCanvasElement => {
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("ক্যানভাস প্রসেস করতে পারছি না");
+        ctx.drawImage(img, 0, 0, w, h);
+        return canvas;
+      };
+
+      // Calculate initial dimensions (max 5MP)
+      let w = origW;
+      let h = origH;
+      if (w * h > MAX_PIXELS) {
+        const scale = Math.sqrt(MAX_PIXELS / (w * h));
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+        console.log("[compress] 3. RESIZED to 5MP", { w, h, scale });
+      } else {
+        console.log("[compress] 3. NO resize for 5MP, using", { w, h });
+      }
+
+      const tryCompress = (
+        width: number,
+        height: number,
+        quality: number,
+        attempts: number
+      ) => {
+        console.log("[compress] 4. tryCompress ENTRY", {
+          attempt: attempts + 1,
+          width,
+          height,
+          quality,
+          pixels: width * height,
+        });
+
+        // Safety: prevent infinite loops
+        if (attempts > 20) {
+          console.error("[compress] 4b. ABORT: max attempts (20) exceeded");
+          reject(new Error("ছবি কমপ্রেস করতে অনেক চেষ্টা হয়েছে"));
+          return;
+        }
+
+        let canvas: HTMLCanvasElement;
+        try {
+          canvas = drawAtSize(width, height);
+        } catch (e) {
+          reject(e);
+          return;
+        }
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              console.error("[compress] 5. toBlob returned null");
+              reject(new Error("ছবি তৈরি করতে পারছি না"));
+              return;
+            }
+
+            const under = blob.size <= MAX_FILE_BYTES;
+            console.log("[compress] 5. toBlob RESULT", {
+              blobSize: fmt(blob.size),
+              blobSizeBytes: blob.size,
+              target: fmt(MAX_FILE_BYTES),
+              underTarget: under,
+              qualityUsed: quality,
+            });
+
+            // Success: under 4MB
+            if (under) {
+              console.log("[compress] 6. SUCCESS: resolved compressed file");
+              const name = file.name.replace(/\.[^.]+$/, "") || "image";
+              resolve(new File([blob], `${name}.jpg`, { type: "image/jpeg" }));
+              return;
+            }
+
+            // Still too large - try reducing quality first
+            if (quality > 0.1) {
+              const nextQ = Math.max(0.1, quality - 0.15);
+              console.log("[compress] 7. TOO LARGE → reduce quality", {
+                from: quality,
+                to: nextQ,
+              });
+              tryCompress(width, height, nextQ, attempts + 1);
+              return;
+            }
+
+            // Quality is at minimum - reduce dimensions
+            const ratio = Math.sqrt(MAX_FILE_BYTES / blob.size) * 0.9;
+            const newW = Math.max(100, Math.round(width * ratio));
+            const newH = Math.max(100, Math.round(height * ratio));
+
+            console.log("[compress] 8. TOO LARGE at min quality → reduce dimensions", {
+              ratio,
+              width,
+              height,
+              newW,
+              newH,
+              canReduce: newW < width || newH < height,
+            });
+
+            // If dimensions can't reduce further, force a smaller size
+            if (newW >= width && newH >= height) {
+              const forcedW = Math.max(100, Math.round(width * 0.7));
+              const forcedH = Math.max(100, Math.round(height * 0.7));
+              console.log("[compress] 9. DIMENSIONS DID NOT REDUCE → force 70%", {
+                forcedW,
+                forcedH,
+              });
+              tryCompress(forcedW, forcedH, 0.8, attempts + 1);
+              return;
+            }
+
+            // Retry with smaller dimensions and reset quality
+            console.log("[compress] 10. RETRY with smaller size", { newW, newH, quality: 0.8 });
+            tryCompress(newW, newH, 0.8, attempts + 1);
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+
+      // Start compression
+      console.log("[compress] START tryCompress", { w, h, quality: 0.9 });
+      tryCompress(w, h, 0.9, 0);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      console.error("[compress] IMAGE LOAD ERROR");
+      reject(new Error("ছবি লোড করতে পারছি না"));
+    };
+    img.src = url;
+  });
+}
 
 export function CompleteProfileForm() {
   const { user } = useUser();
@@ -132,15 +307,20 @@ export function CompleteProfileForm() {
     ctx.drawImage(video, 0, 0);
 
     canvas.toBlob(
-      (blob) => {
+      async (blob) => {
         if (!blob) return;
         const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
-        setSelfiePreview((prev) => {
-          if (prev) URL.revokeObjectURL(prev);
-          return URL.createObjectURL(blob);
-        });
-        setSelfieFile(file);
         closeSelfieCamera();
+        try {
+          const compressed = await compressImage(file);
+          setSelfiePreview((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return URL.createObjectURL(compressed);
+          });
+          setSelfieFile(compressed);
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "ছবি প্রসেস করতে ব্যর্থ");
+        }
       },
       "image/jpeg",
       0.9
@@ -563,20 +743,51 @@ export function CompleteProfileForm() {
                         </span>
                       </p>
                       <p className="text-xs text-muted-foreground/80">
-                        JPG, PNG or WebP (Max 5MB)
+                        JPG, PNG or WebP (Max 4MB, বড় হলে কমপ্রেস করা হবে)
                       </p>
                     </div>
                     <input
                       type="file"
                       accept={ACCEPT_IMAGES}
                       className="hidden"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const f = e.target.files?.[0] ?? null;
+                        e.target.value = "";
+                        if (!f) {
+                          setIdCardPreview((prev) => {
+                            if (prev) URL.revokeObjectURL(prev);
+                            return null;
+                          });
+                          setIdCardFile(null);
+                          return;
+                        }
+                        const origUrl = URL.createObjectURL(f);
                         setIdCardPreview((prev) => {
                           if (prev) URL.revokeObjectURL(prev);
-                          return f ? URL.createObjectURL(f) : null;
+                          return origUrl;
                         });
-                        setIdCardFile(f);
+                        setIdCardFile(null);
+                        try {
+                          const compressed = await compressImage(f);
+                          URL.revokeObjectURL(origUrl);
+                          setIdCardPreview((prev) => {
+                            if (prev) URL.revokeObjectURL(prev);
+                            return URL.createObjectURL(compressed);
+                          });
+                          setIdCardFile(compressed);
+                        } catch (err) {
+                          URL.revokeObjectURL(origUrl);
+                          setIdCardPreview((prev) => {
+                            if (prev) URL.revokeObjectURL(prev);
+                            return null;
+                          });
+                          setIdCardFile(null);
+                          setError(
+                            err instanceof Error
+                              ? err.message
+                              : "ছবি প্রসেস করতে ব্যর্থ। অন্য ছবি চেষ্টা করুন।"
+                          );
+                        }
                       }}
                     />
                   </label>
