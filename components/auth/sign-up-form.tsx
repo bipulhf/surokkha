@@ -2,12 +2,26 @@
 
 import * as SignUp from "@clerk/elements/sign-up";
 import * as Clerk from "@clerk/elements/common";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export function SignUpForm() {
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  // Reset loading state after timeout (safety mechanism in case redirect doesn't happen)
+  useEffect(() => {
+    if (isGoogleLoading) {
+      const timer = setTimeout(() => {
+        setIsGoogleLoading(false);
+      }, 10000); // Reset after 10 seconds if redirect hasn't happened
+      return () => clearTimeout(timer);
+    }
+  }, [isGoogleLoading]);
+
   return (
     <SignUp.Root>
       <SignUp.Step name="start">
@@ -21,9 +35,20 @@ export function SignUpForm() {
             <Clerk.Connection
               name="google"
               className={cn(buttonVariants({ variant: "outline", size: "default" }), "w-full")}
+              onClick={() => setIsGoogleLoading(true)}
+              disabled={isGoogleLoading}
             >
-              <Clerk.Icon className="mr-2 size-4" />
-              গুগল দিয়ে সাইন আপ
+              {isGoogleLoading ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  গুগলে রিডাইরেক্ট হচ্ছে...
+                </>
+              ) : (
+                <>
+                  <Clerk.Icon className="mr-2 size-4" />
+                  গুগল দিয়ে সাইন আপ
+                </>
+              )}
             </Clerk.Connection>
             <p className="text-center text-sm text-muted-foreground">
               ইতিমধ্যে অ্যাকাউন্ট আছে?{" "}

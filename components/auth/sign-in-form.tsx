@@ -3,10 +3,12 @@
 import * as SignIn from "@clerk/elements/sign-in";
 import * as Clerk from "@clerk/elements/common";
 import { useSignIn } from "@clerk/nextjs";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 
 const HANDLED_VERIFICATION_STRATEGIES = ["password", "email_code"];
@@ -15,11 +17,22 @@ const HANDLED_VERIFICATION_STRATEGIES_CORRESPONDENT = ["password"];
 export function SignInForm({ variant = "default" }: { variant?: "default" | "correspondent" }) {
   const isCorrespondent = variant === "correspondent";
   const { signIn } = useSignIn();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const factors = signIn?.supportedFirstFactors ?? null;
   const handled = isCorrespondent ? HANDLED_VERIFICATION_STRATEGIES_CORRESPONDENT : HANDLED_VERIFICATION_STRATEGIES;
   const showOAuthFallback =
     Array.isArray(factors) &&
     !factors.some((f) => handled.includes(f.strategy));
+
+  // Reset loading state after timeout (safety mechanism in case redirect doesn't happen)
+  useEffect(() => {
+    if (isGoogleLoading) {
+      const timer = setTimeout(() => {
+        setIsGoogleLoading(false);
+      }, 10000); // Reset after 10 seconds if redirect hasn't happened
+      return () => clearTimeout(timer);
+    }
+  }, [isGoogleLoading]);
 
   return (
     <SignIn.Root>
@@ -38,9 +51,20 @@ export function SignInForm({ variant = "default" }: { variant?: "default" | "cor
                 <Clerk.Connection
                   name="google"
                   className={cn(buttonVariants({ variant: "outline", size: "default" }), "w-full")}
+                  onClick={() => setIsGoogleLoading(true)}
+                  disabled={isGoogleLoading}
                 >
-                  <Clerk.Icon className="mr-2 size-4" />
-                  গুগল দিয়ে সাইন ইন
+                  {isGoogleLoading ? (
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      গুগলে রিডাইরেক্ট হচ্ছে...
+                    </>
+                  ) : (
+                    <>
+                      <Clerk.Icon className="mr-2 size-4" />
+                      গুগল দিয়ে সাইন ইন
+                    </>
+                  )}
                 </Clerk.Connection>
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
