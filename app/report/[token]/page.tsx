@@ -29,7 +29,7 @@ export default function PublicReportPage() {
       });
       return;
     }
-    navigator.geolocation.getCurrentPosition(
+    const watchId = navigator.geolocation.watchPosition(
       (p) => {
         setMyLocation({ lat: p.coords.latitude, lng: p.coords.longitude });
         setMyLocationError(null);
@@ -41,6 +41,7 @@ export default function PublicReportPage() {
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   function requestMyLocation() {
